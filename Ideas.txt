@@ -1,0 +1,5 @@
+Ideas
+
+* Simple server/client application(s)
+* Game
+* Plotting script
