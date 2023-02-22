@@ -82,9 +82,9 @@ print('\n')
 
 
 # Exercises 8-7 and 8-8
-print('Exercise 8-7')
+print('Exercises 8-7 and 8-8')
 
-def make_album(artist_name, album_title, number_of_songs=''):
+def make_album(artist_name, album_title, number_of_songs=None):
     """Builds a dictionary describing a music album"""
 
     return_dict = {
