@@ -1,0 +1,3 @@
+In Python, you can create a list of integers!
+In Python, you can loop over items in a dictionary.
+In Python, you can climb tall mountains.
