@@ -18,18 +18,35 @@ class Bullet(Sprite):
             self.settings.bullet_width, self.settings.bullet_height)
         self.rect.midtop = ai_game.ship.rect.midtop
         
+        # Bullets should move horizontally according to how the ship is moving
+        if ai_game.ship.moving_right == True:
+            self.velocity_x = ai_game.settings.ship_speed
+        elif ai_game.ship.moving_left == True:
+            self.velocity_x = -ai_game.settings.ship_speed
+        else:
+            self.velocity_x = 0
+
+        if ai_game.ship.moving_up == True:
+            self.velocity_y = -ai_game.settings.ship_speed - self.settings.bullet_speed
+        elif ai_game.ship.moving_down == True:
+            self.velocity_y = ai_game.settings.ship_speed - self.settings.bullet_speed
+        else:
+            self.velocity_y = -self.settings.bullet_speed
+    
         # Store the bullet's position as a float
         self.y = float(self.rect.y)
-        # x position?
+        self.x = float(self.rect.x)
 
     def update(self):
         """Move the bullet up the screen"""
 
         # Update the exact position of the bullet
-        self.y -= self.settings.bullet_speed
+        self.y += self.velocity_y
+        self.x += self.velocity_x
 
         # Update the rect position
         self.rect.y = self.y
+        self.rect.x = self.x
 
     def draw_bullet(self):
         """Draw the bullet on the screen"""

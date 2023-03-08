@@ -2,13 +2,14 @@
 Alien Invasion game - main file
 
 Ideas for improvements:
-- power-ups that you need to drive over to activate:
+- [0.1] power-ups that you need to drive over to activate:
     - stronger bullets (e.g. that pass through aliens)
 - ability to turn ship
 - practice mode
 - two-player game
 - maybe game doesn't end when aliens hit the bottom?
-- save high scores and names in a file
+- [1/2] save high scores and names in a file
+- [x] bullets have horizontal velocities from movement of ship
 """
 import sys
 from time import sleep
@@ -21,6 +22,7 @@ from button import Button
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
+from powerup import Powerup
 
 class AlienInvasion:
     """Overall class to manage game assets and behaviour"""
@@ -57,6 +59,9 @@ class AlienInvasion:
         self.aliens = pygame.sprite.Group()
         self._create_fleet()
 
+        # Create powerups
+        self.powerups = pygame.sprite.Group()
+
         # Start game in an inactive state.
         self.game_active = False
 
@@ -80,9 +85,20 @@ class AlienInvasion:
             
                 # Update the aliens
                 self._update_aliens()
+
+                current_time = pygame.time.get_ticks()
+                print(current_time)
+                if int(current_time) > 3000 and int(current_time) < 3100:
+                    powerup = Powerup(self)
+        
+                    #powerup.rect.x = x_position
+                    #qqqpowerup.rect.y = y_position
+                    self.powerups.add(powerup)
+
+
             
             # Update the screen
-            self._update_screen()
+            self._update_screen( )
  
             # Specify frame rate (in Hz)
             self.clock.tick(60)
@@ -95,6 +111,7 @@ class AlienInvasion:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 print("Game window closed; stopping game.")
+                self.stats.high_score_file_path.write_text(str(self.stats.high_score))
                 sys.exit()
             
             elif event.type == pygame.KEYDOWN:
@@ -128,9 +145,9 @@ class AlienInvasion:
             self.aliens.empty()
 
             # Create a new alien fleet and centre the ship
-            self._create_fleet()
             self.ship.center_ship()
-
+            self._create_fleet()
+            
             # Hide the mouse cursor.
             pygame.mouse.set_visible(False)
 
@@ -153,6 +170,7 @@ class AlienInvasion:
             self._fire_bullet()
         elif event.key == pygame.K_q:
             print("'q' pressed; stopping game.")
+            self.stats.high_score_file_path.write_text(str(self.stats.high_score))
             sys.exit()            
 
     def _check_keyup_events(self, event):
@@ -178,6 +196,7 @@ class AlienInvasion:
             bullet.draw_bullet()
         self.ship.blitme()
         self.aliens.draw(self.screen)
+        self.powerups.draw(self.screen)
 
         # Draw the stats to the screen.
         self.sb.show_stats()
@@ -290,19 +309,10 @@ class AlienInvasion:
             self.sb.prep_score()
             self.sb.check_high_score()
 
-        # Check if we've destroyed all the aliens
+        # Check if we've destroyed all the aliens. If so, start a new level!
         if not self.aliens:
-            # Increment level
-            print(f'Level {self.stats.level} complete! New aliens approach..')
-            self.stats.level += 1
-            self.sb.prep_level()
+            self._start_new_level()
             
-            # Destroy existing bullets and create a new fleet
-            self.bullets.empty()
-            self._create_fleet()
-            self.settings.increase_speed()
-
-
     def _ship_hit(self):
         """Respond to the ship being hit by an alien."""
         if self.stats.ships_left > 0:
@@ -318,9 +328,9 @@ class AlienInvasion:
             self.aliens.empty()
 
             # Create a new alien fleet and centre the ship
-            self._create_fleet()
             self.ship.center_ship()
-
+            self._create_fleet()
+            
             # Pause
             sleep(0.5)
 
@@ -336,6 +346,22 @@ class AlienInvasion:
                 # Treat this the same as if the ship got hit.
                 self._ship_hit()
                 break
+
+    def _start_new_level(self):
+        """
+        Increment level, clean up bullets, create new alien fleet, and 
+        increase speed settings
+        """
+        
+        # Increment level
+        print(f'Level {self.stats.level} complete! New aliens approach..')
+        self.stats.level += 1
+        self.sb.prep_level()
+                
+        self.bullets.empty()
+        self.ship.center_ship()
+        self._create_fleet()
+        self.settings.increase_speed()
 
 # Main routine
 if __name__=='__main__':
