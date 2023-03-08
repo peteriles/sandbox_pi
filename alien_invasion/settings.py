@@ -16,21 +16,36 @@ class Settings:
         self.ship_limit = 3 # Number of ships
         
         # Bullet settings
-        self.bullet_width = 3
-        self.bullet_height = 15
         self.bullet_color = (60, 60, 60)
-        self.bullets_allowed = 10
-        self.invincible_bullets = False; 
+        self.invincible_bullet_color = (255, 165, 0)
+        self.bullets_allowed_increment = 2
+        self.bullet_width_increase = 5
+        self.bullet_height_increase = 5
+        self.bullet_speed_increase = 2
 
         # Alien settings
         self.fleet_drop_speed = 30
         # fleet_direction of 1 represents right; -1 represents left
         self.fleet_direction = 1
+        # Number of free rows at the bottom of the screen at game start
+        self.free_alien_rows = 6 
+        # Number of columns at the side of the screen at game start
+        self.free_alien_columns = 3
 
-        # How quickly the game speeds up
+        # Powerup settings
+        self.powerup_period = 300 # Roughly how many frames to wait for the 
+                                  # next powerup appearance/disappearance
+        self.powerup_options = ['bullet_width', 
+                                'num_bullets', 
+                                'invincible_bullets', 
+                                'bullet_speed']
+        self.powerup_buffer_pixels = 50; # Powerups will appear at least this 
+                                         # far from screen edges
+
+        # How quickly the game speeds up with each level
         self.speedup_scale = 1.1
 
-        # How quickly the alien point values increase
+        # How quickly the alien point values increase with each level
         self.score_scale = 1.5
 
         self.initialize_dynamic_settings()
@@ -40,8 +55,15 @@ class Settings:
         
         # Speed settings
         self.alien_speed = 1.5
-        self.bullet_speed = 5.0
+        self.bullet_speed = 5.0 # Also changes with powerup
         self.ship_speed = 3 # Horizontal speed. [1-5] 1 = slow, 5 = fast
+
+        # Bullet settings
+        self.bullets_allowed = 3 # Increases with powerups
+        self.bullet_width = 3 # Increases with powerups   
+        self.bullet_height = 15 # Increases when speed increses
+                                # (to deal with frame rate issues)
+        self.invincible_bullets = False; # Changes with powerup
 
         # Scoring settings
         self.alien_points = 50
@@ -52,5 +74,6 @@ class Settings:
         self.alien_speed *= self.speedup_scale
         self.bullet_speed *= self.speedup_scale
         self.ship_speed *= self.speedup_scale
+        self.bullet_height *= self.speedup_scale
 
         self.alien_points = int(self.alien_points * self.score_scale)

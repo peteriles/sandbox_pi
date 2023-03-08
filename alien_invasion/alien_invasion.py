@@ -2,18 +2,21 @@
 Alien Invasion game - main file
 
 Ideas for improvements:
-- [0.1] power-ups that you need to drive over to activate:
-    - stronger bullets (e.g. that pass through aliens)
+- [x] power-ups that you need to drive over to activate
+     [ ] need to have the screen flash or something when you get one
 - ability to turn ship
 - practice mode
 - two-player game
+- aliens should shoot too
 - maybe game doesn't end when aliens hit the bottom?
 - [1/2] save high scores and names in a file
-- [x] bullets have horizontal velocities from movement of ship
+- [x] bullets have velocities from movement of ship
 """
 import sys
 from time import sleep
 import pygame
+from random import randint
+from random import choice
 
 from settings import Settings
 from game_stats import GameStats
@@ -49,8 +52,9 @@ class AlienInvasion:
         self.stats = GameStats(self)
         self.sb = Scoreboard(self)
 
-        # Create Ship instance
+        # Create Ship instances
         self.ship = Ship(self)
+        #self.ship2 = Ship(self)
 
         # Create group of bullets
         self.bullets = pygame.sprite.Group()
@@ -61,7 +65,8 @@ class AlienInvasion:
 
         # Create powerups
         self.powerups = pygame.sprite.Group()
-
+        self.powerup_active = False
+        
         # Start game in an inactive state.
         self.game_active = False
 
@@ -79,6 +84,7 @@ class AlienInvasion:
 
                 # Update position of the ship
                 self.ship.update()
+                #self.ship2.update()
             
                 # Update bullet positions, manage list of active bullets
                 self._update_bullets()
@@ -86,19 +92,11 @@ class AlienInvasion:
                 # Update the aliens
                 self._update_aliens()
 
-                current_time = pygame.time.get_ticks()
-                print(current_time)
-                if int(current_time) > 3000 and int(current_time) < 3100:
-                    powerup = Powerup(self)
-        
-                    #powerup.rect.x = x_position
-                    #qqqpowerup.rect.y = y_position
-                    self.powerups.add(powerup)
-
-
+                # Update the powerups
+                self._update_powerups()
             
             # Update the screen
-            self._update_screen( )
+            self._update_screen()
  
             # Specify frame rate (in Hz)
             self.clock.tick(60)
@@ -121,35 +119,39 @@ class AlienInvasion:
                 self._check_keyup_events(event)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Check if the Play button was pressed
                 mouse_pos = pygame.mouse.get_pos()
-                self._check_play_button(mouse_pos)
+                button_clicked = self.play_button.rect.collidepoint(mouse_pos)
 
-    def _check_play_button(self, mouse_pos):
-        """Start a new game when the player clicks Play."""
-        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
+                if button_clicked and not self.game_active:
+                    self._start_game()
 
-        if button_clicked and not self.game_active:
-            # Reset the game settings
-            self.settings.initialize_dynamic_settings()
+                
+    def _start_game(self):
+        """Start a new game"""
+        # Reset the game settings
+        self.settings.initialize_dynamic_settings()
             
-            # Reset the game statistics.
-            self.stats.reset_stats()
-            self.sb.prep_score()
-            self.sb.prep_level()
-            self.sb.prep_ships()
+        # Reset the game statistics.
+        self.stats.reset_stats()
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
             
-            self.game_active = True
+        self.game_active = True
+        self.powerup_active = False  
     
-            # Get rid of any remaining bullets and aliens                        
-            self.bullets.empty()
-            self.aliens.empty()
+        # Get rid of any remaining bullets and aliens                        
+        self.bullets.empty()
+        self.aliens.empty()
 
-            # Create a new alien fleet and centre the ship
-            self.ship.center_ship()
-            self._create_fleet()
+        # Create a new alien fleet and centre the ship
+        self.ship.center_ship()
+        #self.ship2.center_ship()
+        self._create_fleet()
             
-            # Hide the mouse cursor.
-            pygame.mouse.set_visible(False)
+        # Hide the mouse cursor.
+        pygame.mouse.set_visible(False)
 
     
     def _check_keydown_events(self, event):
@@ -166,8 +168,22 @@ class AlienInvasion:
         elif event.key == pygame.K_DOWN:
             # Move ship down
             self.ship.moving_down = True
+    #    elif event.key == pygame.K_d:
+            # Move ship2 to the right
+     #       self.ship2.moving_right = True
+        #elif event.key == pygame.K_a:
+            # Move ship2 to the left
+         #   self.ship2.moving_left = True
+        #elif event.key == pygame.K_w:
+            # Move ship2 up
+         #   self.ship2.moving_up = True
+        #elif event.key == pygame.K_s:
+            # Move ship2 down
+         #   self.ship2.moving_down = True            
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
+        elif event.key == pygame.K_p and not self.game_active:
+            self._start_game()
         elif event.key == pygame.K_q:
             print("'q' pressed; stopping game.")
             self.stats.high_score_file_path.write_text(str(self.stats.high_score))
@@ -183,6 +199,14 @@ class AlienInvasion:
             self.ship.moving_up = False 
         elif event.key == pygame.K_DOWN:
             self.ship.moving_down = False            
+        """elif event.key == pygame.K_d:
+            self.ship2.moving_right = False
+        elif event.key == pygame.K_a:
+            self.ship2.moving_left = False
+        elif event.key == pygame.K_w:
+            self.ship2.moving_up = False
+        elif event.key == pygame.K_s:
+            self.ship2.moving_down = False"""
 
     def _update_screen(self):
         """
@@ -195,6 +219,7 @@ class AlienInvasion:
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
         self.ship.blitme()
+        #self.ship2.blitme()
         self.aliens.draw(self.screen)
         self.powerups.draw(self.screen)
 
@@ -217,8 +242,8 @@ class AlienInvasion:
         
         alien_width, alien_height = alien.rect.size
         current_x, current_y = alien_width, alien_height
-        while current_y < (self.settings.screen_height - 3 *alien_height):
-            while current_x < (self.settings.screen_width - 2*alien_width):
+        while current_y < (self.settings.screen_height - self.settings.free_alien_rows*alien_height):
+            while current_x < (self.settings.screen_width - self.settings.free_alien_columns*alien_width):
                 self._create_alien(current_x, current_y)
                 current_x += 2*alien_width
 
@@ -254,7 +279,7 @@ class AlienInvasion:
     def _fire_bullet(self):
         """Create a new bullet and add it to the bullets group"""
         if len(self.bullets) < self.settings.bullets_allowed:
-            new_bullet = Bullet(self)
+            new_bullet = Bullet(self, self.settings.invincible_bullets)
             self.bullets.add(new_bullet)
 
     def _update_bullets(self):
@@ -275,12 +300,16 @@ class AlienInvasion:
         self._check_bullet_alien_collisions()        
 
     def _update_aliens(self):
-        """Check if the fleet is at an edge, then update positions."""
+        """
+        Update aliens. First, check if the fleet is at an edge, then update 
+        positions, then check for collisions with ship, then check if the 
+        aliens have reached the bottom.
+        """
         self._check_fleet_edges()
         self.aliens.update()
 
         # Look for alien-ship collisions. 
-        # This function's arguments are a sprit (ship) and a group (aliens)
+        # This function's arguments are a sprite (ship) and a group (aliens)
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
             self._ship_hit()
 
@@ -312,7 +341,54 @@ class AlienInvasion:
         # Check if we've destroyed all the aliens. If so, start a new level!
         if not self.aliens:
             self._start_new_level()
-            
+    
+    def _update_powerups(self):
+        """
+        Look for ship-powerup collisions, and then create/remove powerups at
+        random times.
+        """
+     
+        # Look for ship-powerup collisions
+        # This function's arguments are a sprite (ship) and a group (powerups)
+        powerup_collision_sprite = pygame.sprite.spritecollideany(self.ship, self.powerups)
+
+        if powerup_collision_sprite:
+            if powerup_collision_sprite.powerup_type == 'bullet_width':
+                self.settings.bullet_width += self.settings.bullet_width_increase
+            elif powerup_collision_sprite.powerup_type == 'num_bullets':
+                self.settings.bullets_allowed += self.settings.bullets_allowed_increment
+            elif powerup_collision_sprite.powerup_type == 'invincible_bullets':
+                self.settings.invincible_bullets = True
+            elif powerup_collision_sprite.powerup_type == 'bullet_speed':
+                self.settings.bullet_speed += self.settings.bullet_speed_increase
+                self.settings.bullet_height += self.settings.bullet_height_increase
+            else:
+                print("Warning: Unknown powerup")
+
+            # Remove existing powerup
+            self.powerups.empty()
+            self.powerup_active = False
+
+        # Create and remove powerups at random times. Created powerups are put 
+        # at a random position, and have a random type. Only one powerup can 
+        # be active at the same time (for now)
+        random_number = randint(1, self.settings.powerup_period)
+        if random_number == 1:
+            if self.powerup_active == False:
+                # Create new powerup of random type
+                powerup_choice = choice(self.settings.powerup_options)
+                powerup = Powerup(self, powerup_choice)
+                powerup.rect.x = randint(self.settings.powerup_buffer_pixels, 
+                                            self.settings.screen_width - self.settings.powerup_buffer_pixels)
+                powerup.rect.y = randint(self.settings.powerup_buffer_pixels, 
+                                            self.settings.screen_height - self.settings.powerup_buffer_pixels)
+                self.powerups.add(powerup)
+                self.powerup_active = True
+            else:
+                # Remove existing powerup
+                self.powerups.empty()
+                self.powerup_active = False
+      
     def _ship_hit(self):
         """Respond to the ship being hit by an alien."""
         if self.stats.ships_left > 0:
@@ -360,6 +436,7 @@ class AlienInvasion:
                 
         self.bullets.empty()
         self.ship.center_ship()
+        #self.ship2.center_ship()
         self._create_fleet()
         self.settings.increase_speed()
 
