@@ -1,11 +1,11 @@
-"""Bullet class"""
+"""Bullet classes"""
 import pygame
 from pygame.sprite import Sprite
 
 class Bullet(Sprite):
     """A class to manage bullets fired from the ship"""
 
-    def __init__(self, ai_game, invincible_bullet):
+    def __init__(self, ai_game, invincible_bullet=False):
         """Create a bullet object at the ship's current position"""
         super().__init__()
         self.screen = ai_game.screen
@@ -14,6 +14,32 @@ class Bullet(Sprite):
             self.color = self.settings.invincible_bullet_color    
         else:
             self.color = self.settings.bullet_color
+
+    def update(self):
+        """Move the bullet"""
+
+        # Update the exact position of the bullet
+        self.y += self.velocity_y
+        self.x += self.velocity_x
+
+        # Update the rect position
+        self.rect.y = self.y
+        self.rect.x = self.x
+
+    def draw_bullet(self):
+        """Draw the bullet on the screen"""
+        pygame.draw.rect(self.screen, self.color, self.rect)
+
+
+class ShipBullet(Bullet):
+    """Represents a specific type of bullet - one coming from the ship"""
+
+    def __init__(self, ai_game, invincible_bullet):
+        """
+        Initialize attributes of the parent class.
+        Then initialize attributes specific to a ship's bullet
+        """
+        super().__init__(ai_game, invincible_bullet)
 
         # Create a bullet rect at (0, 0) and the set the correct position 
         # relative to the ship
@@ -40,17 +66,27 @@ class Bullet(Sprite):
         self.y = float(self.rect.y)
         self.x = float(self.rect.x)
 
-    def update(self):
-        """Move the bullet up the screen"""
 
-        # Update the exact position of the bullet
-        self.y += self.velocity_y
-        self.x += self.velocity_x
+class AlienBullet(Bullet):
+    """Represents a specific type of bullet - one coming from an alien"""
 
-        # Update the rect position
-        self.rect.y = self.y
-        self.rect.x = self.x
+    def __init__(self, ai_game, alien_instance):
+        """
+        Initialize attributes of the parent class.
+        Then initialize attributes specific to a ship's bullet
+        """
+        super().__init__(ai_game)
 
-    def draw_bullet(self):
-        """Draw the bullet on the screen"""
-        pygame.draw.rect(self.screen, self.color, self.rect)
+        # Create a bullet rect at (0, 0) and the set the correct position 
+        # relative to the alien
+        self.rect = pygame.Rect(0, 0, 
+            self.settings.alien_bullet_width, self.settings.alien_bullet_height)
+        self.rect.midbottom = alien_instance.rect.midbottom
+        
+        # Alien bullets just go straight down, for now
+        self.velocity_x = 0
+        self.velocity_y = self.settings.alien_bullet_speed
+    
+        # Store the bullet's position as a float
+        self.y = float(self.rect.y)
+        self.x = float(self.rect.x)

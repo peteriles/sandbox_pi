@@ -7,7 +7,7 @@ Ideas for improvements:
 - ability to turn ship
 - practice mode
 - two-player game
-- aliens should shoot too
+- [x] aliens should shoot too
 - maybe game doesn't end when aliens hit the bottom?
 - [1/2] save high scores and names in a file
 - [x] bullets have velocities from movement of ship
@@ -23,7 +23,7 @@ from game_stats import GameStats
 from scoreboard import Scoreboard
 from button import Button
 from ship import Ship
-from bullet import Bullet
+from bullet import AlienBullet, ShipBullet
 from alien import Alien
 from powerup import Powerup
 
@@ -56,8 +56,9 @@ class AlienInvasion:
         self.ship = Ship(self)
         #self.ship2 = Ship(self)
 
-        # Create group of bullets
+        # Create groups of bullets (alien and ship bullets)
         self.bullets = pygame.sprite.Group()
+        self.alien_bullets = pygame.sprite.Group()
 
         # Create the aliens
         self.aliens = pygame.sprite.Group()
@@ -218,6 +219,8 @@ class AlienInvasion:
         self.screen.fill(self.settings.bg_color)
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
+        for alien_bullet in self.alien_bullets.sprites():
+            alien_bullet.draw_bullet()
         self.ship.blitme()
         #self.ship2.blitme()
         self.aliens.draw(self.screen)
@@ -279,17 +282,23 @@ class AlienInvasion:
     def _fire_bullet(self):
         """Create a new bullet and add it to the bullets group"""
         if len(self.bullets) < self.settings.bullets_allowed:
-            new_bullet = Bullet(self, self.settings.invincible_bullets)
+            new_bullet = ShipBullet(self, self.settings.invincible_bullets)
             self.bullets.add(new_bullet)
+
+    def _alien_fire_bullet(self, alien_instance):
+        """Create a new alien bullet and add it to the alien-bullets group"""
+        new_alien_bullet = AlienBullet(self, alien_instance)
+        self.alien_bullets.add(new_alien_bullet)
 
     def _update_bullets(self):
         """
-        Update position of bullets, get rid of old bullets, and check for bullet-
-        alien collisions.
+        Update position of all bullets, get rid of old bullets, and check for bullet-
+        alien collisions, and bullet-ship collisions.
         """
 
         # Update positions of bullets
         self.bullets.update()
+        self.alien_bullets.update()
 
         # Remove bullets that have disappeared. Loop over a copy of the list of 
         # bullets since we can't modify the list we're looping over.
@@ -297,7 +306,12 @@ class AlienInvasion:
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
 
+        for alien_bullet in self.alien_bullets.copy():
+            if alien_bullet.rect.top >= self.settings.screen_height:
+                self.alien_bullets.remove(alien_bullet)
+
         self._check_bullet_alien_collisions()        
+        self._check_bullet_ship_collisions()
 
     def _update_aliens(self):
         """
@@ -307,6 +321,12 @@ class AlienInvasion:
         """
         self._check_fleet_edges()
         self.aliens.update()
+
+        # Random aliens fire at random times
+        random_number = randint(1, self.settings.alien_fire_period)
+        if random_number == 1:
+            random_alien = randint(0, len(self.aliens.sprites())-1)
+            self._alien_fire_bullet(self.aliens.sprites()[random_alien])
 
         # Look for alien-ship collisions. 
         # This function's arguments are a sprite (ship) and a group (aliens)
@@ -318,7 +338,7 @@ class AlienInvasion:
 
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions"""
-
+ 
         # Remove any bullets and aliens that have collided
         # Check for any bullets that have hit aliens. If so, get rid of the bullet
         # and the alien. 
@@ -342,6 +362,15 @@ class AlienInvasion:
         if not self.aliens:
             self._start_new_level()
     
+    def _check_bullet_ship_collisions(self):
+        """Respond to collisions between the ship and alien bullets"""
+
+        # This function's arguments are a sprite (ship) and a group (alien_bullets)
+        collision = pygame.sprite.spritecollideany(self.ship, self.alien_bullets)
+
+        if collision:
+            self._ship_hit()
+        
     def _update_powerups(self):
         """
         Look for ship-powerup collisions, and then create/remove powerups at
@@ -402,6 +431,7 @@ class AlienInvasion:
             # Get rid of any remaining bullets and aliens
             self.bullets.empty()
             self.aliens.empty()
+            self.alien_bullets.empty()
 
             # Create a new alien fleet and centre the ship
             self.ship.center_ship()

@@ -32,6 +32,12 @@ class Settings:
         # Number of columns at the side of the screen at game start
         self.free_alien_columns = 3
 
+        # Alien Bullet settings
+        self.alien_bullet_width = 7 # Increases with powerups   
+        self.alien_bullet_height = 7
+        self.alien_bullet_speed = 5
+        
+
         # Powerup settings
         self.powerup_period = 300 # Roughly how many frames to wait for the 
                                   # next powerup appearance/disappearance
@@ -47,6 +53,9 @@ class Settings:
 
         # How quickly the alien point values increase with each level
         self.score_scale = 1.5
+
+        # How quickly alien-bullet speeds increase
+        self.alien_bullet_speed_scale = 1.1
 
         self.initialize_dynamic_settings()
 
@@ -65,6 +74,9 @@ class Settings:
                                 # (to deal with frame rate issues)
         self.invincible_bullets = False; # Changes with powerup
 
+        # Alien bullet settings
+        self.alien_fire_period = 150
+
         # Scoring settings
         self.alien_points = 50
 
@@ -75,5 +87,6 @@ class Settings:
         self.bullet_speed *= self.speedup_scale
         self.ship_speed *= self.speedup_scale
         self.bullet_height *= self.speedup_scale
+        self.alien_fire_period = round(self.alien_fire_period/self.alien_bullet_speed_scale)
 
         self.alien_points = int(self.alien_points * self.score_scale)
