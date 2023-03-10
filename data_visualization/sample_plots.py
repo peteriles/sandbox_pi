@@ -1,6 +1,8 @@
 """Chapter 15"""
 
 import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
 from random_walk import RandomWalk
 
@@ -48,7 +50,7 @@ ax.tick_params(labelsize=14)
 
 # Plot random walk ############################################################
 print('Making a random walk')
-my_walk = RandomWalk(100)
+my_walk = RandomWalk(100000)
 
 fig2, ax2 = plt.subplots()
 # fig2, ax2 = plt.subplots(figsize=(15,9)) # The tuple argument is inches (approximately!) on the scree
@@ -71,3 +73,20 @@ ax.set_aspect('equal')
 #ax2.get_yaxis().set_visible(False)
 
 plt.show()
+
+
+# Now plot the random walk with plotly
+title = "Random walk"
+labels = {'x': "X (metres)", "y": "Y (metres)"}
+fig3 = px.scatter(x=my_walk.walk_x, y=my_walk.walk_y, title=title, 
+                  labels=labels, color=range(1, len(my_walk.walk_x)+1))
+# emphasize first and last points
+#hey = go.scatter.Marker(size=50) # Make an instance of a Scatter object
+#fig3.add_trace(go.Scatter(x=[0], y=[0], marker=hey)) # Pass that instance into the add_trace function
+fig3.add_trace(go.Scatter(x=[0], y=[0], marker=go.scatter.Marker(size=50, color='green')))
+fig3.add_trace(go.Scatter(x=[my_walk.walk_x[-1]], y=[my_walk.walk_y[-1]], marker=go.scatter.Marker(size=50, color='red')))
+
+
+# size=range(1, len(my_walk.walk_x)+1)
+fig3.write_html("hey3.html")
+print("End of program")
